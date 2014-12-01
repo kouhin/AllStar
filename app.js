@@ -1,15 +1,15 @@
 /**
  * express server setting
  **/
-var express = require('express'),
-	// favicon = require('serve-favicon'),
-	morgan = require('morgan'),
-	bodyParser = require('body-parser'),
-	methodOverride = require('method-override'),
-	cookieParser = require('cookie-parser'),
-	session = require('express-session'),
-	path = require('path'),
-	config = require('./config/config');
+var express = require('express');
+//var favicon = require('serve-favicon');
+var logger = require('morgan');
+var bodyParser = require('body-parser');
+var methodOverride = require('method-override');
+var cookieParser = require('cookie-parser');
+var session = require('express-session');
+var path = require('path');
+var config = require('./config/config');
 
 var app = express();
 
@@ -17,11 +17,13 @@ require('./config/mongoose')(app, config);
 
 // all environments
 app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'ejs');
+app.set('view engine', 'jade');
 // app.use(favicon());
-app.use(morgan('dev'));
-app.use(bodyParser.json);
+app.use(logger('dev'));
+
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+
 app.use(methodOverride(function (req, res) {
 	if (req.body && typeof req.body === 'object' && '_method' in req.body) {
 		var method = req.body['_method'];
@@ -29,6 +31,7 @@ app.use(methodOverride(function (req, res) {
 		return method;
 	}
 }));
+
 app.use(cookieParser());
 app.use(session({
 	secret: 'iYrGXU6oHwLPYry764c9eIsBg0lbozgv',
@@ -37,8 +40,11 @@ app.use(session({
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', require('./routes/index'));
-app.use('/master', require('./routes/master'));
+var index = require('./routes/index');
+var master = require('./routes/master');
+
+app.use('/', index);
+app.use('/master', master);
 
 /// catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -71,4 +77,4 @@ app.use(function(err, req, res, next) {
 	});
 });
 
-module.exports = exports = app;
+module.exports = app;
