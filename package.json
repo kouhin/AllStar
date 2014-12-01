@@ -2,10 +2,12 @@
   "name": "allstar",
   "version": "0.0.1",
   "dependencies": {
+    "async": "^0.9.0",
+    "ejs": "*",
     "express": "3.2.6",
-	"ejs": "*",
-	"requirejs": "*",
-	"lodash": "*",
-	"socket.io": "*"
+    "lodash": "*",
+    "mongoose": "^3.8.19",
+    "requirejs": "*",
+    "socket.io": "*"
   }
 }

@@ -5,9 +5,12 @@ var express = require('express'),
 	http = require('http'),
 	path = require('path'),
 	io = require('socket.io'),
-	routes = require('./routes');
+	routes = require('./routes'),
+	config = require('./config/config');
 
 var app = express();
+
+require('./config/mongoose')(app, config);
 
 // all environments
 app.set('port', process.env.PORT || 3000);
