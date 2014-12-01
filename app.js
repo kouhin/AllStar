@@ -1,131 +1,80 @@
 /**
  * express server setting
  **/
-var express = require('express'),
-	http = require('http'),
-	path = require('path'),
-	io = require('socket.io'),
-	routes = require('./routes');
+var express = require('express');
+//var favicon = require('serve-favicon');
+var logger = require('morgan');
+var bodyParser = require('body-parser');
+var methodOverride = require('method-override');
+var cookieParser = require('cookie-parser');
+var session = require('express-session');
+var path = require('path');
+var config = require('./config/config');
 
 var app = express();
 
+require('./config/mongoose')(app, config);
+
 // all environments
-app.set('port', process.env.PORT || 3000);
-app.set('views', __dirname + '/views');
-app.set('view engine', 'ejs');
-app.use(express.favicon());
-app.use(express.logger('dev'));
-app.use(express.bodyParser());
-app.use(express.methodOverride());
-app.use(app.router);
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'jade');
+// app.use(favicon());
+app.use(logger('dev'));
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
+app.use(methodOverride(function (req, res) {
+	if (req.body && typeof req.body === 'object' && '_method' in req.body) {
+		var method = req.body['_method'];
+		delete req.body['_method'];
+		return method;
+	}
+}));
+
+app.use(cookieParser());
+app.use(session({
+	secret: 'iYrGXU6oHwLPYry764c9eIsBg0lbozgv',
+	resave: true,
+	saveUninitialized: true
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// development only
-if ('development' === app.get('env')) {
-	app.use(express.errorHandler());
+var index = require('./routes/index');
+var master = require('./routes/master');
+
+app.use('/', index);
+app.use('/master', master);
+
+/// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+	var err = new Error('Not Found');
+	err.status = 404;
+	next(err);
+});
+
+/// error handlers
+
+// development error handler
+// will print stacktrace
+if (app.get('env') === 'development') {
+	app.use(function(err, req, res, next) {
+		res.status(err.status || 500);
+		res.render('error', {
+			message: err.message,
+			error: err
+		});
+	});
 }
 
-app.get('/', routes.client);
-app.get('/master', routes.index);
-
-var server = http.createServer(app);
-server.listen(app.get('port'), function(){
-	console.log('Express server listening on port ' + app.get('port'));
-});
-
-
-/**
- * application socket io
- */
-var AllStar = require('./src/allStar'),
-	state = AllStar.state.init(),
-	socket = io.listen(server),
-	token = 'kgsihpthjsdfiwojwpea:ofjdsj',
-	masterKey = '*';
-
-// set Bug
-socket.set('log level', 1);
-socket.on('connection', function (client) {
-
-	'use strict';
-
-	/**
-	 * clientId
-	 */
-	var clientId = client.id;
-
-	/**
-	 * get flow state
-	 */
-	client
-	.on('get:state', function () {
-		var state, data;
-
-		state = AllStar.state.get();
-		data = AllStar.getData(state);
-
-		client.emit(state, data);
-	})
-
-	/**
-	 * receive from master
-	 * proceed next flow
-	 */
-	.on('next', function (data) {
-		state = AllStar.state.next();
-
-		var data = AllStar.getData(state),
-			_state = state.split(':');
-
-		// question count start
-		if (_state[1] === 'start') {
-			AllStar.timer.start();
-		}
-
-		state = (_state[2])? _state[0]+':'+_state[1] : state;
-
-		// broadcast all connected
-		socket.sockets.emit(state, data);
-	})
-
-	/**
-	 * register
-	 */
-	.on('register', function (data) {
-		if (!data) {
-			return;
-		}
-		var user = AllStar.register(clientId, data);
-		client.emit('registered', user);
-		socket.sockets.emit('register:member', {sum: AllStar.getRegistered()});
-	})
-
-	/**
-	 * getMasterToken with simple word check
-	 */
-	.on('getMasterToken', function (key) {
-		// var _token = (key === masterKey) ? token : null;
-		client.emit('setMasterToken', 'aa');
-	})
-
-	/**
-	 * answer from client
-	 */
-	.on('q:answer', function (data) {
-		if (AllStar.timer.state === 'stop') {
-			return;
-		}
-
-		AllStar.answer({
-			id: data.id,
-			answer: data.answer,
-			time: AllStar.timer.get()
-		});
-
-	})
-
-	// disconected
-	.on('disconnect', function () {
-		// noop
+// production error handler
+// no stacktraces leaked to user
+app.use(function(err, req, res, next) {
+	res.status(err.status || 500);
+	res.render('error', {
+		message: err.message,
+		error: {}
 	});
 });
+
+module.exports = app;
