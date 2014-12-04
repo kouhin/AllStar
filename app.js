@@ -10,12 +10,17 @@ var cookieParser = require('cookie-parser');
 var session = require('express-session');
 var path = require('path');
 var config = require('./config/config');
+var basicAuth = require('basic-auth-connect');
 
 var app = express();
 
 require('./config/mongoose')(app, config);
 
 // all environments
+app.all('/master', basicAuth(function(user, password) {
+    return user === 'master' && password === 'amebapass';
+}));
+
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 // app.use(favicon());
