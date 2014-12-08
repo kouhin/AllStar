@@ -12,12 +12,11 @@ require.config({
 define(['lodash', 'chikuwa', 'view'], function (_, $, view) {
 
 	var socket = io.connect(location.origin),
-		id = $.storage('_ASD_ID'),
-		name = $.storage('name');
+		_id = $.storage('_ASD_ID');
 
 	// check registered
-	if (id) {
-		socket.emit('register', {id: id, name: name});
+	if (_id) {
+		socket.emit('register', {_id: _id});
 	} else {
 		var top = view.top();
 		top.on('submit', function(name) {
@@ -25,18 +24,29 @@ define(['lodash', 'chikuwa', 'view'], function (_, $, view) {
 		});
 	}
 
+	socket.on('invalid_id', function() {
+		_id = null;
+		$.storage('_ASD_ID', _id);
+		var top = view.top();
+		top.on('submit', function(name) {
+			socket.emit('register', {name: name});
+		});
+	});
+
 	socket.on('registered', function (user) {
 		user = user || {};
 		view.resistered();
 
-		id = user.id;
-		$.storage('_ASD_ID', user.id);
+		_id = user._id;
+		$.storage('_ASD_ID', user._id);
 	});
 
 	socket.on('entry:start', function (data) {
+		console.log('entry:exit');
 	});
 
 	socket.on('entry:exit', function (data) {
+		console.log('entry:exit');
 		view.entry('exit', data);
 	});
 
@@ -47,7 +57,7 @@ define(['lodash', 'chikuwa', 'view'], function (_, $, view) {
 	socket.on('q:start', function (data) {
 		var content = view.quiz('start', data);
 		content.once('answer', function(num) {
-			socket.emit('q:answer', {id: id, answer: num});
+			socket.emit('q:answer', {_id: _id, answer: num});
 		});
 	});
 

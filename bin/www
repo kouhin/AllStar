@@ -12,11 +12,11 @@ var server = app.listen(app.get('port'), function() {
 /**
  * application socket io
  */
-var AllStar = require('../src/allStar'),
-    state = AllStar.state.init(),
-    socket = io.listen(server),
-    token = 'kgsihpthjsdfiwojwpea:ofjdsj',
-    masterKey = '*';
+var AllStar = require('../lib/AllStar');
+var state = AllStar.state.init();
+var socket = io.listen(server);
+var token = 'kgsihpthjsdfiwojwpea:ofjdsj';
+var masterKey = '*';
 
 // set Bug
 socket.on('connection', function (client) {
@@ -31,12 +31,13 @@ socket.on('connection', function (client) {
    */
   client
       .on('get:state', function () {
-        var state, data;
-
-        state = AllStar.state.get();
-        data = AllStar.getData(state);
-
-        client.emit(state, data);
+          var state = AllStar.state.get();
+          AllStar.getData(state, function(err, data) {
+              if(err) {
+                  return console.log('Error: ', err, data);
+              }
+              return client.emit(state, data);
+          });
       })
 
   /**
@@ -44,32 +45,52 @@ socket.on('connection', function (client) {
    * proceed next flow
    */
       .on('next', function (data) {
-        state = AllStar.state.next();
+          state = AllStar.state.next();
+          AllStar.getData(state, function(err, data) {
+              if(err) {
+                  return console.log('Error: ', err, data);
+              }
+              var _state = state.split(':');
 
-        var data = AllStar.getData(state),
-            _state = state.split(':');
+              // question count start
+              if (_state[1] === 'start') {
+                  AllStar.timer.start();
+              }
 
-        // question count start
-        if (_state[1] === 'start') {
-          AllStar.timer.start();
-        }
+              state = (_state[2]) ? _state[0] + ':' + _state[1] : state;
 
-        state = (_state[2])? _state[0]+':'+_state[1] : state;
-
-        // broadcast all connected
-        socket.sockets.emit(state, data);
+              // broadcast all connected
+              socket.sockets.emit(state, data);
+          });
       })
 
   /**
    * register
    */
       .on('register', function (data) {
-        if (!data) {
-          return;
-        }
-        var user = AllStar.register(clientId, data);
-        client.emit('registered', user);
-        socket.sockets.emit('register:member', {sum: AllStar.getRegistered()});
+          if (!data) {
+              return;
+          }
+          AllStar.register(clientId, data, function (err, user) {
+              if (err) {
+                  if('invalid_id' == err) {
+                      return client.emit(err);
+                  } else {
+                      return console.log('ERROR: ', err, user);
+                  }
+              }
+
+              if (user) {
+                  client.emit('registered', user);
+
+                  AllStar.getRegistered(function (err, count) {
+                      if (err) {
+                          return console.log('ERROR: ', err, count);
+                      }
+                      socket.sockets.emit('register:member', {sum: count});
+                  });
+              }
+          });
       })
 
   /**
@@ -89,9 +110,11 @@ socket.on('connection', function (client) {
         }
 
         AllStar.answer({
-          id: data.id,
+          _id: data._id,
           answer: data.answer,
           time: AllStar.timer.get()
+        }, function(err, user) {
+            //Empty
         });
 
       })
