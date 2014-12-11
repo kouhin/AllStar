@@ -9,7 +9,7 @@ define(['chikuwa', 'lodash', 'master/base'], function ($, _, base) {
 			logo, member;
 		if (state === 'start') {
 			// entry start
-			logo = $.tag('img').attr('src', 'img/logo.png');
+			logo = $.tag('img').attr('src', 'img/logo2014.png');
 			member = $.tag('#member');
 			view.append(logo);
 			view.append(member);
