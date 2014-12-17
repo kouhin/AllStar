@@ -1,0 +1,13 @@
+doctype html
+html(lang="ja")
+    head
+        meta(charset="utf-8")
+        title= オールスター大感謝祭
+        link(rel="stylesheet", href="css/main.css")
+        link(rel="stylesheet", href="css/bootstrap.min.css")
+    body
+        div データクリア
+        form(method="post", action="/master/clear")
+            input(type="password", name="password")
+            input(type="submit", value="Confirm")
+            

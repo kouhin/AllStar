@@ -7,7 +7,8 @@ var logger = require('morgan');
 var bodyParser = require('body-parser');
 var methodOverride = require('method-override');
 var cookieParser = require('cookie-parser');
-var session = require('express-session');
+// var session = require('express-session');
+var session = require('cookie-session');
 var path = require('path');
 var config = require('./config/config');
 var basicAuth = require('basic-auth-connect');
@@ -39,9 +40,7 @@ app.use(methodOverride(function (req, res) {
 
 app.use(cookieParser());
 app.use(session({
-	secret: 'iYrGXU6oHwLPYry764c9eIsBg0lbozgv',
-	resave: true,
-	saveUninitialized: true
+  keys:['iYrGXU6oHwLPYry764c9eIsBg0lbozgv']
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 
